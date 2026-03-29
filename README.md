@@ -106,5 +106,5 @@
 
 <p align="center">
   Released under the <a href="LICENSE">MIT License</a>. <br />
-  Copyright © 2026 Rebel Yang.
+  Copyright © 2026 rebel-yang.
 </p>
