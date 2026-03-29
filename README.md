@@ -28,10 +28,7 @@
 
 ## 🎬 视觉盛宴 (Showcase)
 
-| 🌊 三维正弦波浪 | 🌀 动态涡旋场 | 🌫️ 分形噪声漂移 |
-| :---: | :---: | :---: |
-| <img src="https://via.placeholder.com/260x180?text=Wave+Demo" width="260"> | <img src="https://via.placeholder.com/260x180?text=Vortex+Demo" width="260"> | <img src="https://via.placeholder.com/260x180?text=Noise+Demo" width="260"> |
-| *优雅的全轴律动* | *指尖搅动银河* | *引力热源缭绕* |
+🌀 后续将补充YouTube和小红书发布的操作链接🔗
 
 ---
 
