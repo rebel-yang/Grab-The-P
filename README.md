@@ -25,7 +25,11 @@
 > **“抓个P”** 灵感来源于：**P**ixel (像素) → **P**articles (粒子) → **P**lay (玩耍)。
 
 ---
+## 🚀 立即体验 / Live Demo
+👉 [点击这里直接开始玩 / Click here to Play!](https://grabthep.netlify.app/)
+*(注：需要开启摄像头权限，所有数据仅在本地处理，不会上传到服务器)*
 
+---
 ## 🎬 视觉盛宴 (Showcase)
 
 🌀 后续将补充YouTube和小红书发布的操作链接🔗
