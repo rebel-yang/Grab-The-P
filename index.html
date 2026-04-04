@@ -1,39 +1,48 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI 粒子引擎 - 终极多维流体版</title>
+    <title>GrabTheP - AI Interactive Particle Engine</title>
     <style>
         body { margin: 0; background: #000; color: #eee; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         canvas { display: block; }
         
-        /* 主控制面板 (调整了最大高度，支持内部滚动以容纳更多参数) */
+        /* Language Toggle Button */
+        #lang-toggle {
+            position: absolute; top: 15px; right: 320px; z-index: 100;
+            background: #0055ff; color: white; border: none; padding: 6px 12px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;
+            box-shadow: 0 0 10px rgba(0, 85, 255, 0.5); transition: 0.3s;
+        }
+        #lang-toggle:hover { background: #00aaff; }
+
+        /* Main Panel */
         #main-panel {
             position: absolute; top: 15px; left: 15px; z-index: 100;
             background: rgba(15, 15, 15, 0.85); padding: 15px; border-radius: 12px;
-            border: 1px solid #333; width: 270px; max-height: 90vh; overflow-y: auto;
+            border: 1px solid #333; width: 280px; max-height: 90vh; overflow-y: auto;
             backdrop-filter: blur(10px); box-shadow: 0 5px 20px rgba(0,0,0,0.6);
         }
-        /* 自定义滚动条 */
         #main-panel::-webkit-scrollbar { width: 6px; }
         #main-panel::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
         
         .section { margin-bottom: 12px; }
         label { font-size: 11px; color: #aaa; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.5px;}
-        input[type="file"], select, button { 
+        input[type="file"], select, button.action-btn { 
             width: 100%; padding: 8px; cursor: pointer; background: #222; 
             color: white; border: 1px solid #444; border-radius: 6px; box-sizing: border-box; transition: 0.2s;
         }
         select { background: #111; color: #00ffcc; font-weight: bold; border-color: #0055aa;}
-        button:hover { background: #333; }
+        button.action-btn:hover { background: #333; }
+        button:disabled { color: #666; cursor: not-allowed; }
         .btn-group { display: flex; gap: 8px; margin-top: 5px; }
 
-        /* 状态与摄像头 */
-        #status-bar { position: absolute; top: 15px; right: 300px; text-align: right; pointer-events: none; color: #00ffcc; font-family: monospace; font-size: 14px; text-shadow: 0 0 5px #000;}
+        /* Status & Camera */
+        #status-bar { position: absolute; top: 55px; right: 320px; text-align: right; pointer-events: none; color: #00ffcc; font-family: monospace; font-size: 14px; text-shadow: 0 0 5px #000;}
         #cam-view { position: absolute; bottom: 15px; right: 15px; width: 180px; height: 135px; border: 2px solid #444; border-radius: 8px; overflow: hidden; background: #000; z-index: 50; }
         video#input_video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* 使用说明浮窗 */
+        /* Help Panel */
         #help-panel {
             position: absolute; bottom: 15px; left: 15px; z-index: 100;
             background: rgba(10, 20, 30, 0.95); padding: 20px; border-radius: 12px;
@@ -55,65 +64,60 @@
 </head>
 <body>
 
+    <!-- i18n Toggle -->
+    <button id="lang-toggle">中</button>
+
     <div id="main-panel">
         <div class="section">
-            <label>1. 上传图片 (自动去背景)</label>
+            <label data-i18n="uploadLbl">1. Upload Image (Auto-bg removal)</label>
             <input type="file" id="upload" accept="image/*">
         </div>
         
         <div class="section">
-            <label>2. 核心场运动 (Base Motion)</label>
+            <label data-i18n="motionLbl">2. Base Motion</label>
             <select id="motion-mode">
-                <option value="0">🧊 静态悬浮</option>
-                <option value="1">🌊 三维正弦波震荡</option>
-                <option value="2">🌀 动态中心涡旋场</option>
-                <option value="3">💓 生命呼吸脉冲</option>
-                <option value="4" selected>🌫️ 分形噪声漂移</option>
+                <option value="0" data-i18n="mo0">🧊 Static Hover</option>
+                <option value="1" data-i18n="mo1">🌊 3D Sine Wave</option>
+                <option value="2" data-i18n="mo2">🌀 Dynamic Vortex</option>
+                <option value="3" data-i18n="mo3">💓 Life Pulse</option>
+                <option value="4" selected data-i18n="mo4">🌫️ Fractal Noise Drift</option>
             </select>
         </div>
 
         <div class="section">
-            <label>3. 物理手势引擎 (Physics)</label>
+            <label data-i18n="physicsLbl">3. Physics Engine</label>
             <select id="engine-mode">
-                <option value="0">❌ 关闭物理力学</option>
-                <option value="1">🖐️ 基础交互 (推力/聚散)</option>
-                <option value="2" selected>🍯 非牛顿流体 (阻力渐进)</option>
+                <option value="0" data-i18n="ph0">❌ No Physics</option>
+                <option value="1" data-i18n="ph1">🖐️ Basic Push/Pull</option>
+                <option value="2" selected data-i18n="ph2">🍯 Non-Newtonian Fluid</option>
             </select>
         </div>
 
         <div class="section">
-            <label>4. 视觉与渲染 (Style)</label>
+            <label data-i18n="styleLbl">4. Visual Style</label>
             <select id="render-style">
-                <option value="0">✨ 极光光点</option>
-                <option value="1">🔢 赛博矩阵 01</option>
+                <option value="0" data-i18n="st0">✨ Aurora Particles</option>
+                <option value="1" data-i18n="st1">🔢 Cyber Matrix 01</option>
             </select>
         </div>
         
         <div class="section btn-group">
-            <button id="start-rec">开始录制</button>
-            <button id="stop-rec" disabled>保存视频</button>
+            <button id="start-rec" class="action-btn" data-i18n="recStart">Start Recording</button>
+            <button id="stop-rec" class="action-btn" disabled data-i18n="recStop">Save Video</button>
         </div>
     </div>
 
-    <!-- 使用说明 -->
-    <button id="help-toggle">📖 模式玩法指南</button>
+    <button id="help-toggle" data-i18n="helpToggle">📖 How to Play</button>
     <div id="help-panel">
         <div class="help-close" id="btn-close-help">✖</div>
-        <h3>📖 全新模式玩法指南</h3>
-        <p><span class="highlight">💓 呼吸脉冲 (心跳模式)</span><br>
-        整体粒子像心脏一样膨胀收缩。<b>交互：</b>当你握拳时，心跳急剧加速，进入狂暴跳动状态；张开手掌则恢复平静心率。</p>
-        
-        <p><span class="highlight">🌫️ 分形噪声漂移 (烟雾模式)</span><br>
-        粒子沿着不可见的 3D 噪声场如烟雾般流淌。<b>交互：</b>你的手掌化身为“引力热源”，手靠近时粒子会被手心吸引并缭绕在指尖。</p>
-        
-        <p><span class="highlight">🌊 三维正弦波震荡</span><br>
-        现在支持在右侧面板独立调节 X/Y/Z 轴的震荡幅度，并支持正负向反转拉伸！</p>
-        
-        <p><span class="highlight">🌍 自动巡航旋转</span><br>
-        在右侧【全局视效】面板，可勾选绕 X/Y/Z 轴自动转动，上帝视角观察立体结构。</p>
+        <h3 data-i18n="helpTitle">📖 Gameplay Guide</h3>
+        <p data-i18n="helpP1"><span class="highlight">💓 Life Pulse</span><br>Particles expand/contract like a heart. <b>Gesture:</b> Make a fist to trigger rapid heartbeat; open hand to calm down.</p>
+        <p data-i18n="helpP2"><span class="highlight">🌫️ Noise Drift</span><br>Particles flow in a 3D noise field like smoke. <b>Gesture:</b> Your palm is a 'gravity well', attracting particles.</p>
+        <p data-i18n="helpP3"><span class="highlight">🌊 3D Sine Wave</span><br>Adjust X/Y/Z amplitude independently in the right panel for 3D ripples!</p>
+        <p data-i18n="helpP4"><span class="highlight">🌍 Auto Spin</span><br>Enable X/Y/Z auto-rotation in the right panel for a cinematic 3D view.</p>
     </div>
 
-    <div id="status-bar">GESTURE: <span id="gest-type">NONE</span></div>
+    <div id="status-bar"><span data-i18n="gestTxt">GESTURE: </span><span id="gest-type">NONE</span></div>
     <div id="cam-view"><video id="input_video"></video></div>
 
     <script type="importmap">
@@ -131,59 +135,213 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'lil-gui';
 
+        // ==========================================
+        // i18n Internationalization Dictionary
+        // ==========================================
+        let curLang = 'en';
+        let isRecording = false;
+
+        const dict = {
+            en: {
+                langBtn: "中",
+                uploadLbl: "1. Upload Image (Auto-bg removal)",
+                motionLbl: "2. Base Motion",
+                physicsLbl: "3. Physics Engine",
+                styleLbl: "4. Visual Style",
+                mo0: "🧊 Static Hover",
+                mo1: "🌊 3D Sine Wave",
+                mo2: "🌀 Dynamic Vortex",
+                mo3: "💓 Life Pulse",
+                mo4: "🌫️ Fractal Noise Drift",
+                ph0: "❌ No Physics",
+                ph1: "🖐️ Basic Push/Pull",
+                ph2: "🍯 Non-Newtonian Fluid",
+                st0: "✨ Aurora Particles",
+                st1: "🔢 Cyber Matrix 01",
+                recStart: "Start Recording",
+                recIng: "● Recording...",
+                recStop: "Save Video",
+                helpToggle: "📖 How to Play",
+                helpTitle: "📖 Gameplay Guide",
+                helpP1: "<span class='highlight'>💓 Life Pulse</span><br>Particles expand/contract like a heart. <b>Gesture:</b> Make a fist to trigger rapid heartbeat; open hand to calm down.",
+                helpP2: "<span class='highlight'>🌫️ Noise Drift</span><br>Particles flow in a 3D noise field like smoke. <b>Gesture:</b> Your palm is a 'gravity well', attracting particles.",
+                helpP3: "<span class='highlight'>🌊 3D Sine Wave</span><br>Adjust X/Y/Z amplitude independently in the right panel for 3D ripples!",
+                helpP4: "<span class='highlight'>🌍 Auto Spin</span><br>Enable X/Y/Z auto-rotation in the right panel for a cinematic 3D view.",
+                gestTxt: "GESTURE: ",
+                guiTitle: "⚙️ Physics & Motion Settings",
+                f0: "Global Visuals & Spin",
+                pSize: "Particle Size",
+                trail: "Trail (0=None)",
+                bgFilter: "Bg Filter Threshold",
+                spinX: "Auto Spin X",
+                spinY: "Auto Spin Y",
+                spinZ: "Auto Spin Z",
+                spinSpeed: "Spin Speed",
+                f1: "🌊 Sine Wave Field",
+                waveX: "X Amplitude",
+                waveY: "Y Amplitude",
+                waveZ: "Z Amplitude",
+                waveSpeed: "Wave Speed",
+                f2: "🌀 Vortex / 💓 Pulse / 🌫️ Noise",
+                vortexSpeed: "[Vortex] Spin Speed",
+                pulseAmp: "[Pulse] Expand Amp",
+                noiseAmp: "[Noise] Turb Amp",
+                noiseFreq: "[Noise] Detail Freq",
+                noiseAttract: "[Noise] Hand Attract",
+                f3: "🖐️ Physics Gestures",
+                brushSize: "🖌️ Brush Radius",
+                repulsion: "Repulsion Force",
+                nonNewt: "Non-Newtonian Viscosity",
+                returnForce: "Return Elasticity",
+                alertBg: "Please re-upload the image to apply the new background filter."
+            },
+            zh: {
+                langBtn: "EN",
+                uploadLbl: "1. 上传图片 (自动智能抠图)",
+                motionLbl: "2. 核心场运动 (Base Motion)",
+                physicsLbl: "3. 物理手势引擎 (Physics)",
+                styleLbl: "4. 视觉渲染风格 (Style)",
+                mo0: "🧊 静态悬浮",
+                mo1: "🌊 三维正弦波震荡",
+                mo2: "🌀 动态中心涡旋场",
+                mo3: "💓 生命呼吸脉冲",
+                mo4: "🌫️ 分形噪声漂移",
+                ph0: "❌ 关闭物理力学",
+                ph1: "🖐️ 基础交互 (推力/聚散)",
+                ph2: "🍯 非牛顿流体 (阻力渐进)",
+                st0: "✨ 极光光点",
+                st1: "🔢 赛博矩阵 01",
+                recStart: "开始录制",
+                recIng: "● 录制中...",
+                recStop: "保存视频",
+                helpToggle: "📖 模式玩法指南",
+                helpTitle: "📖 全新模式玩法指南",
+                helpP1: "<span class='highlight'>💓 呼吸脉冲 (心跳模式)</span><br>整体粒子像心脏一样膨胀收缩。<b>交互：</b>握拳时心跳急剧加速；张开手掌恢复平静。",
+                helpP2: "<span class='highlight'>🌫️ 分形噪声漂移 (烟雾模式)</span><br>粒子沿着不可见的3D噪声场流淌。<b>交互：</b>手掌化为“引力热源”，吸引粒子缭绕指尖。",
+                helpP3: "<span class='highlight'>🌊 三维正弦波震荡</span><br>支持在右侧面板独立调节 X/Y/Z 轴的震荡幅度，并支持正负向反转拉伸！",
+                helpP4: "<span class='highlight'>🌍 自动巡航旋转</span><br>在右侧面板勾选绕 X/Y/Z 轴自动转动，上帝视角观察立体结构。",
+                gestTxt: "当前手势: ",
+                guiTitle: "⚙️ 物理与运动场调控台",
+                f0: "全局视效与自转",
+                pSize: "粒子发光大小",
+                trail: "残影拖尾程度",
+                bgFilter: "智能去白底强度",
+                spinX: "绕 X 轴自动旋转",
+                spinY: "绕 Y 轴自动旋转",
+                spinZ: "绕 Z 轴自动旋转",
+                spinSpeed: "旋转速度",
+                f1: "🌊 正弦波场",
+                waveX: "X 轴震荡幅度",
+                waveY: "Y 轴震荡幅度",
+                waveZ: "Z 轴震荡幅度",
+                waveSpeed: "波动速度",
+                f2: "🌀 涡旋 / 💓 脉冲 / 🌫️ 噪声",
+                vortexSpeed: "[涡旋] 旋转角速度",
+                pulseAmp: "[脉冲] 心脏膨胀幅度",
+                noiseAmp: "[噪声] 扰动幅度",
+                noiseFreq: "[噪声] 细节频率",
+                noiseAttract: "[噪声] 热源吸引力",
+                f3: "🖐️ 物理手势引擎",
+                brushSize: "🖌️ 手势影响半径",
+                repulsion: "基础斥力/推力",
+                nonNewt: "非牛顿流体增稠",
+                returnForce: "弹性回位韧度",
+                alertBg: "修改后请重新上传图片生效！"
+            }
+        };
+
+        // UI references for lil-gui translation update
+        const guiRefs = { folders: {}, ctrls: {} };
+
+        function applyLanguage(lang) {
+            const d = dict[lang];
+            document.getElementById('lang-toggle').innerText = d.langBtn;
+            
+            // Update static DOM elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (d[key]) el.innerHTML = d[key];
+            });
+
+            // Handle dynamic recording button state
+            const recBtn = document.getElementById('start-rec');
+            recBtn.innerText = isRecording ? d.recIng : d.recStart;
+
+            // Update lil-gui dynamically
+            if (gui) {
+                gui.title(d.guiTitle);
+                guiRefs.folders.f0.title(d.f0);
+                guiRefs.ctrls.pSize.name(d.pSize);
+                guiRefs.ctrls.trail.name(d.trail);
+                guiRefs.ctrls.bgFilter.name(d.bgFilter);
+                guiRefs.ctrls.spinX.name(d.spinX);
+                guiRefs.ctrls.spinY.name(d.spinY);
+                guiRefs.ctrls.spinZ.name(d.spinZ);
+                guiRefs.ctrls.spinSpeed.name(d.spinSpeed);
+
+                guiRefs.folders.f1.title(d.f1);
+                guiRefs.ctrls.waveX.name(d.waveX);
+                guiRefs.ctrls.waveY.name(d.waveY);
+                guiRefs.ctrls.waveZ.name(d.waveZ);
+                guiRefs.ctrls.waveSpeed.name(d.waveSpeed);
+
+                guiRefs.folders.f2.title(d.f2);
+                guiRefs.ctrls.vortexSpeed.name(d.vortexSpeed);
+                guiRefs.ctrls.pulseAmp.name(d.pulseAmp);
+                guiRefs.ctrls.noiseAmp.name(d.noiseAmp);
+                guiRefs.ctrls.noiseFreq.name(d.noiseFreq);
+                guiRefs.ctrls.noiseAttract.name(d.noiseAttract);
+
+                guiRefs.folders.f3.title(d.f3);
+                guiRefs.ctrls.brushSize.name(d.brushSize);
+                guiRefs.ctrls.repulsion.name(d.repulsion);
+                guiRefs.ctrls.nonNewt.name(d.nonNewt);
+                guiRefs.ctrls.returnForce.name(d.returnForce);
+            }
+        }
+
+        document.getElementById('lang-toggle').addEventListener('click', () => {
+            curLang = curLang === 'en' ? 'zh' : 'en';
+            applyLanguage(curLang);
+        });
+
+        // ==========================================
+        // Three.js & Core Physics Engine (No changes)
+        // ==========================================
+
         let scene, camera, renderer, controls, clock;
         let points, material, geometry;
         let posArr, origArr, velArr, typeArr, randArr;
         let gui, mediaRecorder, recordedChunks = [];
         let trailOverlay;
 
-        // 交互与状态数据
         let handPos = new THREE.Vector3(0, 0, 0);
         let targetCenter = new THREE.Vector3(0, 0, 0);
         let curGest = 'NONE';
         let isHandVisible = false;
 
-        // 脉冲系统状态
         let pulsePhase = 0;
         let currentPulseFreq = 1.0;
 
-        // 全局控制参数
         const params = {
-            motion: 4,           // 新增到了 4 种模式
+            motion: 4,           
             engine: 2,           
             style: 0,            
             pSize: 1.5,
             bgFilter: 0.85,
             trail: 0.15,
             
-            // 自动旋转
             spinX: false, spinY: true, spinZ: false,
             spinSpeed: 0.005,
             
-            // 1. 波浪参数
             waveX: 0.0, waveY: 3.0, waveZ: 1.5,
             waveSpeed: 2.0,
             
-            // 2. 涡旋参数
             vortexSpeed: 5.0,    
+            pulseAmp: 0.5, pulseBaseFreq: 2.0, pulseFastFreq: 15.0, pulseSlowFreq: 0.5,
+            noiseAmp: 2.0, noiseFreq: 0.5, noiseAttract: 3.0,   
             
-            // 3. 脉冲参数
-            pulseAmp: 0.5,
-            pulseBaseFreq: 2.0,
-            pulseFastFreq: 15.0, // 握拳狂暴心率
-            pulseSlowFreq: 0.5,
-            
-            // 4. 噪声参数
-            noiseAmp: 2.0,
-            noiseFreq: 0.5,
-            noiseAttract: 3.0,   // 热源吸引力
-            
-            // 物理交互参数
-            brushSize: 4.0,      
-            repulsion: 1.5,      
-            nonNewtonian: 0.3,   
-            returnForce: 0.05,   
-            baseDamping: 0.06
+            brushSize: 4.0, repulsion: 1.5, nonNewtonian: 0.3, returnForce: 0.05, baseDamping: 0.06
         };
 
         function init() {
@@ -200,7 +358,6 @@
             controls = new OrbitControls(camera, renderer.domElement);
             clock = new THREE.Clock();
 
-            // 拖尾黑幕层
             const tGeo = new THREE.PlaneGeometry(200, 200);
             const tMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: params.trail, depthTest: false });
             trailOverlay = new THREE.Mesh(tGeo, tMat);
@@ -209,7 +366,6 @@
             camera.add(trailOverlay);
             scene.add(camera);
 
-            // Shader 负责纯渲染
             material = new THREE.ShaderMaterial({
                 uniforms: {
                     uStyle: { value: params.style },
@@ -255,49 +411,49 @@
             });
 
             initGUI();
+            // Apply language immediately after GUI is created
+            applyLanguage(curLang); 
+
             window.addEventListener('resize', onResize);
             animate();
         }
 
         function initGUI() {
-            gui = new GUI({ title: "⚙️ 物理与运动场调控台" });
+            gui = new GUI(); // Title updated by applyLanguage
             gui.domElement.style.position = 'absolute';
             gui.domElement.style.top = '15px'; gui.domElement.style.right = '15px';
 
-            const f0 = gui.addFolder('全局视效与自转');
-            f0.add(params, 'pSize', 0.1, 5.0).name("粒子发光大小").onChange(v => material.uniforms.uSize.value = v);
-            f0.add(params, 'trail', 0.0, 0.5).name("残影拖尾程度").onChange(v => {
-                trailOverlay.material.opacity = v; renderer.autoClearColor = (v === 0);
-            });
-            f0.add(params, 'bgFilter', 0.0, 1.0).name("智能去白底强度");
-            f0.add(params, 'spinX').name("绕 X 轴自动旋转");
-            f0.add(params, 'spinY').name("绕 Y 轴自动旋转");
-            f0.add(params, 'spinZ').name("绕 Z 轴自动旋转");
-            f0.add(params, 'spinSpeed', 0.001, 0.05).name("旋转速度");
+            const f0 = gui.addFolder(''); guiRefs.folders.f0 = f0;
+            guiRefs.ctrls.pSize = f0.add(params, 'pSize', 0.1, 5.0).onChange(v => material.uniforms.uSize.value = v);
+            guiRefs.ctrls.trail = f0.add(params, 'trail', 0.0, 0.5).onChange(v => { trailOverlay.material.opacity = v; renderer.autoClearColor = (v === 0); });
+            guiRefs.ctrls.bgFilter = f0.add(params, 'bgFilter', 0.0, 1.0).onFinishChange(() => alert(dict[curLang].alertBg));
+            guiRefs.ctrls.spinX = f0.add(params, 'spinX');
+            guiRefs.ctrls.spinY = f0.add(params, 'spinY');
+            guiRefs.ctrls.spinZ = f0.add(params, 'spinZ');
+            guiRefs.ctrls.spinSpeed = f0.add(params, 'spinSpeed', 0.001, 0.05);
 
-            const f1 = gui.addFolder('🌊 正弦波场');
-            f1.add(params, 'waveX', -10.0, 10.0).name("X 轴震荡幅度");
-            f1.add(params, 'waveY', -10.0, 10.0).name("Y 轴震荡幅度");
-            f1.add(params, 'waveZ', -10.0, 10.0).name("Z 轴震荡幅度");
-            f1.add(params, 'waveSpeed', 0.0, 10.0).name("波动速度");
+            const f1 = gui.addFolder(''); guiRefs.folders.f1 = f1;
+            guiRefs.ctrls.waveX = f1.add(params, 'waveX', -10.0, 10.0);
+            guiRefs.ctrls.waveY = f1.add(params, 'waveY', -10.0, 10.0);
+            guiRefs.ctrls.waveZ = f1.add(params, 'waveZ', -10.0, 10.0);
+            guiRefs.ctrls.waveSpeed = f1.add(params, 'waveSpeed', 0.0, 10.0);
 
-            const f2 = gui.addFolder('🌀 涡旋 / 💓 脉冲 / 🌫️ 噪声');
-            f2.add(params, 'vortexSpeed', -15.0, 15.0).name("[涡旋] 旋转角速度");
-            f2.add(params, 'pulseAmp', 0.1, 2.0).name("[脉冲] 心脏膨胀幅度");
-            f2.add(params, 'noiseAmp', 0.0, 10.0).name("[噪声] 扰动幅度");
-            f2.add(params, 'noiseFreq', 0.1, 3.0).name("[噪声] 细节频率");
-            f2.add(params, 'noiseAttract', 0.0, 10.0).name("[噪声] 热源吸引力");
+            const f2 = gui.addFolder(''); guiRefs.folders.f2 = f2;
+            guiRefs.ctrls.vortexSpeed = f2.add(params, 'vortexSpeed', -15.0, 15.0);
+            guiRefs.ctrls.pulseAmp = f2.add(params, 'pulseAmp', 0.1, 2.0);
+            guiRefs.ctrls.noiseAmp = f2.add(params, 'noiseAmp', 0.0, 10.0);
+            guiRefs.ctrls.noiseFreq = f2.add(params, 'noiseFreq', 0.1, 3.0);
+            guiRefs.ctrls.noiseAttract = f2.add(params, 'noiseAttract', 0.0, 10.0);
 
-            const f3 = gui.addFolder('🖐️ 物理手势引擎');
-            f3.add(params, 'brushSize', 1.0, 10.0).name("🖌️ 手势影响半径");
-            f3.add(params, 'repulsion', 0.1, 8.0).name("基础斥力/推力");
-            f3.add(params, 'nonNewtonian', 0.0, 1.0).name("非牛顿流体增稠");
-            f3.add(params, 'returnForce', 0.01, 0.3).name("弹性回位韧度");
+            const f3 = gui.addFolder(''); guiRefs.folders.f3 = f3;
+            guiRefs.ctrls.brushSize = f3.add(params, 'brushSize', 1.0, 10.0);
+            guiRefs.ctrls.repulsion = f3.add(params, 'repulsion', 0.1, 8.0);
+            guiRefs.ctrls.nonNewt = f3.add(params, 'nonNewtonian', 0.0, 1.0);
+            guiRefs.ctrls.returnForce = f3.add(params, 'returnForce', 0.01, 0.3);
             
-            f0.close(); f1.close(); f3.close(); // 默认收起部分菜单防止遮挡
+            f0.close(); f1.close(); f3.close();
         }
 
-        // --- 核心运动与物理引擎 ---
         function updatePhysics() {
             if (!points) return;
 
@@ -306,17 +462,15 @@
             const time = clock.getElapsedTime();
             const dt = clock.getDelta() || 0.016;
             
-            // 涡旋平滑中心点
             targetCenter.x += ((isHandVisible ? handPos.x : 0) - targetCenter.x) * 0.05;
             targetCenter.y += ((isHandVisible ? handPos.y : 0) - targetCenter.y) * 0.05;
 
-            // 脉冲系统频率更新
             let targetFreq = params.pulseBaseFreq;
             if (params.motion === 3 && isHandVisible) {
                 if (curGest === 'FIST') targetFreq = params.pulseFastFreq;
                 else if (curGest === 'OPEN') targetFreq = params.pulseSlowFreq;
             }
-            currentPulseFreq += (targetFreq - currentPulseFreq) * 0.05; // 频率平滑过渡
+            currentPulseFreq += (targetFreq - currentPulseFreq) * 0.05; 
             pulsePhase += currentPulseFreq * dt;
             const pulseScale = 1.0 + params.pulseAmp * Math.sin(pulsePhase);
 
@@ -328,15 +482,14 @@
                 let px = posArr[i3], py = posArr[i3+1], pz = posArr[i3+2];
                 const ox = origArr[i3], oy = origArr[i3+1], oz = origArr[i3+2];
 
-                // === 1. 目标状态场 (Target Fields) ===
                 let tx = ox, ty = oy, tz = oz;
 
-                if (params.motion === 1) { // 🌊 正弦 XYZ
+                if (params.motion === 1) { 
                     tx += Math.sin(oy * 0.5 + time * params.waveSpeed) * params.waveX;
                     ty += Math.sin(ox * 0.5 + time * params.waveSpeed) * params.waveY;
                     tz += Math.cos(ox * 0.5 + time * params.waveSpeed) * params.waveZ;
                 } 
-                else if (params.motion === 2) { // 🌀 涡旋
+                else if (params.motion === 2) { 
                     const dx = ox - targetCenter.x, dy = oy - targetCenter.y;
                     const r = Math.sqrt(dx*dx + dy*dy);
                     const angle = (params.vortexSpeed / (r + 1.0)) * time * 0.5; 
@@ -344,20 +497,15 @@
                     tx = targetCenter.x + dx * cosA - dy * sinA;
                     ty = targetCenter.y + dx * sinA + dy * cosA;
                 }
-                else if (params.motion === 3) { // 💓 呼吸脉冲
-                    tx = ox * pulseScale;
-                    ty = oy * pulseScale;
-                    tz = oz * pulseScale;
+                else if (params.motion === 3) { 
+                    tx = ox * pulseScale; ty = oy * pulseScale; tz = oz * pulseScale;
                 }
-                else if (params.motion === 4) { // 🌫️ 分形噪声漂移 (Trig-Noise 逼近)
-                    const f = params.noiseFreq;
-                    const a = params.noiseAmp;
-                    // 高性能伪 3D 流体噪声场
+                else if (params.motion === 4) { 
+                    const f = params.noiseFreq, a = params.noiseAmp;
                     tx += Math.sin(oy * f + time) * Math.cos(oz * f + time) * a;
                     ty += Math.sin(oz * f + time) * Math.cos(ox * f + time) * a;
                     tz += Math.sin(ox * f + time) * Math.cos(oy * f + time) * a;
                     
-                    // 噪声场专属手势：热源吸引 (手掌像黑洞一样吸入流体)
                     if (isHandVisible) {
                         const hdx = ox - handPos.x, hdy = oy - handPos.y;
                         const dist = Math.sqrt(hdx*hdx + hdy*hdy) || 0.001;
@@ -369,17 +517,14 @@
                     }
                 }
 
-                // === 2. 物理与手势引擎叠加 ===
                 if (params.engine === 0) {
                     px = tx; py = ty; pz = tz;
                     vx = vy = vz = 0;
                 } else {
-                    // 回位力
                     vx += (tx - px) * params.returnForce;
                     vy += (ty - py) * params.returnForce;
                     vz += (tz - pz) * params.returnForce;
 
-                    // 常规物理手势 (排除被噪声吸引占用的逻辑)
                     if (isHandVisible) {
                         const hdx = px - handPos.x, hdy = py - handPos.y;
                         const distSq = hdx*hdx + hdy*hdy;
@@ -388,25 +533,21 @@
                         if (curGest === 'OPEN') {
                             if (distSq < brushSq) {
                                 const f = (1.0 - dist / params.brushSize) * params.repulsion;
-                                vx += (hdx / dist) * f * 0.5;
-                                vy += (hdy / dist) * f * 0.5;
+                                vx += (hdx / dist) * f * 0.5; vy += (hdy / dist) * f * 0.5;
                             }
                         } else if (curGest === 'FIST') {
                             if (type === 0) {
                                 const wave = Math.sin(dist * 3.0 - time * 12.0) * 0.5 + 0.5;
-                                vx += (hdx / dist) * wave * 0.5;
-                                vy += (hdy / dist) * wave * 0.5;
+                                vx += (hdx / dist) * wave * 0.5; vy += (hdy / dist) * wave * 0.5;
                             } else {
                                 if (distSq < brushSq * 2.0) {
                                     vx -= hdx * 0.05; vy -= hdy * 0.05; 
-                                    vx += (Math.random() - 0.5) * 1.0;  
-                                    vy += (Math.random() - 0.5) * 1.0;
+                                    vx += (Math.random() - 0.5) * 1.0; vy += (Math.random() - 0.5) * 1.0;
                                 }
                             }
                         }
                     }
 
-                    // 阻尼与剪切增稠
                     let damping = params.baseDamping;
                     if (params.engine === 2) {
                         const speed = Math.sqrt(vx*vx + vy*vy + vz*vz);
@@ -418,18 +559,13 @@
                     px += vx; py += vy; pz += vz;
                 }
 
-                if (type === 0 && curGest !== 'FIST' && Math.abs(vx)<0.01 && Math.abs(px-tx)<0.01) {
-                    // skip invisibles
-                } else {
-                    posArr[i3] = px; posArr[i3+1] = py; posArr[i3+2] = pz;
-                }
+                if (type === 0 && curGest !== 'FIST' && Math.abs(vx)<0.01 && Math.abs(px-tx)<0.01) {} 
+                else { posArr[i3] = px; posArr[i3+1] = py; posArr[i3+2] = pz; }
                 velArr[i3] = vx; velArr[i3+1] = vy; velArr[i3+2] = vz;
             }
-            
             geometry.attributes.position.needsUpdate = true;
         }
 
-        // --- 图片解析 ---
         document.getElementById('upload').onchange = (e) => {
             const file = e.target.files[0];
             const reader = new FileReader();
@@ -452,19 +588,15 @@
                         const x = (i % size - size/2) * 0.22;
                         const y = (size/2 - Math.floor(i/size)) * 0.22;
 
-                        pos.push(x, y, 0);
-                        cols.push(r, g, b);
-                        typs.push(isBackground ? 0 : 1); 
-                        rands.push(Math.random());
+                        pos.push(x, y, 0); cols.push(r, g, b);
+                        typs.push(isBackground ? 0 : 1); rands.push(Math.random());
                     }
 
                     if(points) scene.remove(points);
                     geometry = new THREE.BufferGeometry();
                     
-                    posArr = new Float32Array(pos);
-                    origArr = new Float32Array(pos);
-                    velArr = new Float32Array(pos.length);
-                    typeArr = new Float32Array(typs);
+                    posArr = new Float32Array(pos); origArr = new Float32Array(pos);
+                    velArr = new Float32Array(pos.length); typeArr = new Float32Array(typs);
 
                     geometry.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
                     geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(cols), 3));
@@ -479,7 +611,6 @@
             reader.readAsDataURL(file);
         };
 
-        // UI 绑定
         document.getElementById('motion-mode').onchange = e => params.motion = parseInt(e.target.value);
         document.getElementById('engine-mode').onchange = e => params.engine = parseInt(e.target.value);
         document.getElementById('render-style').onchange = e => material.uniforms.uStyle.value = parseInt(e.target.value);
@@ -488,7 +619,6 @@
         document.getElementById('btn-close-help').onclick = () => { helpPanel.style.display = 'none'; helpToggle.style.display = 'block'; };
         helpToggle.onclick = () => { helpToggle.style.display = 'none'; helpPanel.style.display = 'block'; };
 
-        // MediaPipe 手势
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6, minTrackingConfidence: 0.6 });
         hands.onResults(res => {
@@ -498,17 +628,15 @@
                 handPos.set((lm[9].x - 0.5) * -22, (0.5 - lm[9].y) * 16, 0);
                 const d = Math.hypot(lm[8].x - lm[0].x, lm[8].y - lm[0].y);
                 curGest = d < 0.22 ? 'FIST' : 'OPEN';
-            } else { 
-                isHandVisible = false;
-                curGest = 'NONE'; 
-            }
+            } else { isHandVisible = false; curGest = 'NONE'; }
             document.getElementById('gest-type').innerText = curGest;
         });
         new Camera(document.getElementById('input_video'), { onFrame: async () => await hands.send({image: document.getElementById('input_video')}), width: 480, height: 360 }).start();
 
-        // 录制视频
         const recStart = document.getElementById('start-rec'), recStop = document.getElementById('stop-rec');
         recStart.onclick = () => {
+            isRecording = true;
+            applyLanguage(curLang); // Update button text
             recordedChunks = [];
             mediaRecorder = new MediaRecorder(renderer.domElement.captureStream(30), { mimeType: 'video/webm; codecs=vp9' });
             mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
@@ -517,13 +645,13 @@
                 a.download = 'art_fluid.webm'; a.click();
             };
             mediaRecorder.start();
-            recStart.innerText = "● 录制中..."; recStart.style.color = "#ff4444";
-            recStart.disabled = true; recStop.disabled = false;
+            recStart.style.color = "#ff4444"; recStart.disabled = true; recStop.disabled = false;
         };
         recStop.onclick = () => {
+            isRecording = false;
+            applyLanguage(curLang); // Update button text back
             mediaRecorder.stop();
-            recStart.innerText = "开始录制"; recStart.style.color = "white";
-            recStart.disabled = false; recStop.disabled = true;
+            recStart.style.color = "white"; recStart.disabled = false; recStop.disabled = true;
         };
 
         function create01Texture() {
@@ -539,11 +667,8 @@
             requestAnimationFrame(animate);
             updatePhysics();
             
-            if(material) {
-                material.uniforms.uFistFactor.value += ((curGest === 'FIST' ? 1.0 : 0.0) - material.uniforms.uFistFactor.value) * 0.15;
-            }
+            if(material) material.uniforms.uFistFactor.value += ((curGest === 'FIST' ? 1.0 : 0.0) - material.uniforms.uFistFactor.value) * 0.15;
             
-            // 自动旋转矩阵更新
             if(points) {
                 if(params.spinX) scene.rotation.x += params.spinSpeed;
                 if(params.spinY) scene.rotation.y += params.spinSpeed;
